@@ -1,0 +1,12 @@
+[MASTER]
+
+disable=import-error,too-many-arguments,too-many-instance-attributes,
+    invalid-name,missing-docstring,bad-continuation,too-few-public-methods,
+    no-name-in-module,no-else-return,fixme,duplicate-code,no-member,
+    broad-except,arguments-differ,logging-fstring-interpolation,
+    comparison-with-callable,use-maxsplit-arg,unsupported-assignment-operation,
+    too-many-locals,consider-using-enumerate,too-many-branches,unsubscriptable-object,
+    c-extension-no-member
+
+[FORMAT]
+max-line-length=120
