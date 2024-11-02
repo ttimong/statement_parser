@@ -37,7 +37,7 @@ repos:
     hooks:
       - id: linting
         name: Linting
-        stages: [push]
+        stages: [pre-push]
         entry: pylint endowus_parser
         language: python
         verbose: true
