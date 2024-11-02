@@ -1,16 +1,43 @@
 import datetime
 
 import pandas as pd
+import pdfplumber
 
-from .regex_patterns import (
-    CLOSE_BAL_COMPILE,
-    DATE_COMPILE,
-    FUND_NAME_COMPILE,
-    FUND_SEARCH_COMPILE,
-    OPEN_BAL_COMPILE,
-    TRX_TYPE_COMPILE,
-    VALUE_COMPILE,
+from statement_parser.utils.regex_patterns import (
+    FWD_ABNORMAL_COMPILE,
+    FWD_CLOSE_BAL_COMPILE,
+    FWD_DATE_COMPILE,
+    FWD_FUND_NAME_COMPILE,
+    FWD_FUND_SEARCH_COMPILE,
+    FWD_OPEN_BAL_COMPILE,
+    FWD_TRX_TYPE_COMPILE,
+    FWD_VALUE_COMPILE,
 )
+
+
+def extract_page(filename: str, password: str) -> list[str]:
+    """
+    Extract all pages from a PDF
+
+    Args:
+        filename (str): file path and name
+        password (str): password to open the PDF
+
+    Returns:
+        list[str]: list of strings extracted from the PDF
+    """
+    with pdfplumber.open(filename, password=password) as pdf:
+        all_pages = []
+        for page in pdf.pages:
+            text = page.extract_text(use_text_flow=True)
+            fund_name_w_newline = FWD_ABNORMAL_COMPILE.search(text)
+            if fund_name_w_newline:
+                start_idx, end_idx = fund_name_w_newline.span()
+                corrected_fund_name = text[start_idx:end_idx].replace("\n", " ")
+                text = text.replace(text[start_idx:end_idx], corrected_fund_name)
+            all_pages.append(text)
+
+    return all_pages
 
 
 def _extract_trx_values(string: str) -> list[float]:
@@ -23,7 +50,7 @@ def _extract_trx_values(string: str) -> list[float]:
     Returns:
         list[float]: list of values extracted
     """
-    raw_values = VALUE_COMPILE.findall(string)
+    raw_values = FWD_VALUE_COMPILE.findall(string)
     strip_values_str = " ".join([s.strip() for s in raw_values if len(s.strip()) > 0])
     strip_values_lst = strip_values_str.split()
     values_lst = []
@@ -64,16 +91,16 @@ def extract_summary(
         line = str_lst[start_idx + i]
 
         # searching for fund name
-        if FUND_SEARCH_COMPILE.search(line):
+        if FWD_FUND_SEARCH_COMPILE.search(line):
             fund_found = True
-            fund_name = FUND_NAME_COMPILE.match(line).group().strip()
+            fund_name = FWD_FUND_NAME_COMPILE.match(line).group().strip()
 
             values_lst = _extract_trx_values(line)
             summary_map[fund_name] = values_lst
 
         i += 1
 
-        if fund_found and not FUND_SEARCH_COMPILE.search(line):
+        if fund_found and not FWD_FUND_SEARCH_COMPILE.search(line):
             break
 
     summary_df = pd.DataFrame.from_dict(
@@ -115,7 +142,7 @@ def find_ind_fund_idx(str_lst: list[str], start_idx: int, end_idx: int) -> list[
     """
     ind_fund_idx = []
     for idx, line in enumerate(str_lst[start_idx:end_idx]):
-        if FUND_SEARCH_COMPILE.search(line):
+        if FWD_FUND_SEARCH_COMPILE.search(line):
             ind_fund_idx.append(idx + start_idx)
     return ind_fund_idx
 
@@ -148,19 +175,19 @@ def extract_fund_trx(
         fund_name = str_lst[start_idx]
         fund_map[fund_name] = []
         for idx in range(start_idx, end_idx):
-            if OPEN_BAL_COMPILE.search(str_lst[idx]):
+            if FWD_OPEN_BAL_COMPILE.search(str_lst[idx]):
                 open_found = True
 
                 j = 1
                 line = str_lst[idx + j]
                 while open_found:
-                    if CLOSE_BAL_COMPILE.search(line):
+                    if FWD_CLOSE_BAL_COMPILE.search(line):
                         break
                     values = _extract_trx_values(line)
 
-                    date = DATE_COMPILE.match(line).group()
+                    date = FWD_DATE_COMPILE.match(line).group()
                     date = datetime.datetime.strptime(date, "%d/%m/%Y").date()
-                    trx_type = TRX_TYPE_COMPILE.search(line).group().strip()
+                    trx_type = FWD_TRX_TYPE_COMPILE.search(line).group().strip()
 
                     values.append(date)
                     values.append(trx_type)
@@ -207,3 +234,106 @@ def extract_fund_trx(
             "value_sgd",
         ]
     ]
+
+
+def extract_data(file: str, password: str) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Extract summary and transaction data from FWD monthly statement
+
+    Args:
+        file (str): file path and name
+        password (str): password to open the PDF
+
+    Returns:
+        pd.DataFrame: summary data of IUA and AUA accounts
+        pd.DataFrame: transaction data of IUA and AUA accounts
+    """
+    # Step 1 - extract raw data from pdf and save to a list
+    all_pages = extract_page(file, password)
+    str_lst = "\n".join(all_pages).split("\n")
+
+    # Step 2 - Find the stat indexes of IUA and AUA keywords
+    iua_idx_lst = []
+    aua_idx_lst = []
+    for idx, line in enumerate(str_lst):
+        if line == "Initial Units Account":
+            iua_idx_lst.append(idx)
+        if line == "Accumulation Units Account":
+            aua_idx_lst.append(idx)
+        if "Valuation" in line:
+            valuation_date = FWD_DATE_COMPILE.search(line).group()
+            valuation_date = datetime.datetime.strptime(
+                valuation_date, "%d/%m/%Y"
+            ).date()
+
+    if iua_idx_lst:
+        iua_summ_start_idx = iua_idx_lst[0]
+        iua_ind_start_idx = iua_idx_lst[1]
+
+    if aua_idx_lst:
+        aua_summ_start_idx = aua_idx_lst[0]
+        if len(aua_idx_lst) == 2:
+            aua_ind_start_idx = aua_idx_lst[1]
+        elif len(aua_idx_lst) == 1:
+            aua_ind_start_idx = None
+    else:
+        aua_ind_start_idx = None
+
+    # Step 3 - Extract summary data of each account (IUA / AUA)
+    if iua_idx_lst:
+        if aua_ind_start_idx:
+            iua_ind_fund_idx_lst = find_ind_fund_idx(
+                str_lst, iua_ind_start_idx, aua_ind_start_idx
+            ) + [aua_ind_start_idx]
+            aua_ind_fund_idx_lst = find_ind_fund_idx(
+                str_lst, aua_ind_start_idx, len(str_lst)
+            ) + [len(str_lst)]
+        else:
+            iua_ind_fund_idx_lst = find_ind_fund_idx(
+                str_lst, iua_ind_start_idx, len(str_lst)
+            ) + [len(str_lst)]
+
+    summary_df = pd.DataFrame()
+    if iua_idx_lst:
+        if aua_idx_lst:
+            iua_summary_df = extract_summary(
+                str_lst, iua_summ_start_idx, aua_summ_start_idx, valuation_date
+            )
+            aua_summary_df = extract_summary(
+                str_lst, aua_summ_start_idx, len(str_lst), valuation_date
+            )
+            summary_df = pd.concat([summary_df, iua_summary_df, aua_summary_df])
+        else:
+            iua_summary_df = extract_summary(
+                str_lst, iua_summ_start_idx, len(str_lst), valuation_date
+            )
+            summary_df = pd.concat([summary_df, iua_summary_df])
+
+    if summary_df.empty:
+        print("Something is wrong")
+    else:
+        summary_df = (
+            summary_df.groupby(["report_month", "create_date", "fund_name"])
+            .agg(
+                units=("units", "sum"),
+                unit_price_fund_currency=("unit_price_fund_currency", "mean"),
+                fund_value_sgd=("value_sgd", "sum"),
+            )
+            .reset_index()
+        )
+
+    # Step 4 - Extract fund transaction data of each account
+    trx_df = pd.DataFrame()
+    if iua_ind_start_idx:
+        iua_trx_df = extract_fund_trx(
+            str_lst, iua_ind_fund_idx_lst, "IUA", valuation_date
+        )
+        trx_df = pd.concat([trx_df, iua_trx_df])
+
+    if aua_ind_start_idx:
+        aua_trx_df = extract_fund_trx(
+            str_lst, aua_ind_fund_idx_lst, "AUA", valuation_date
+        )
+        trx_df = pd.concat([trx_df, aua_trx_df])
+
+    return summary_df, trx_df
