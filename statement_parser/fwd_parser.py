@@ -40,7 +40,7 @@ def extract_page(filename: str, password: str) -> list[str]:
     return all_pages
 
 
-def _extract_trx_values(string: str) -> list[float]:
+def extract_trx_values(string: str) -> list[float]:
     """
     Extract transaction values from a string
 
@@ -51,16 +51,14 @@ def _extract_trx_values(string: str) -> list[float]:
         list[float]: list of values extracted
     """
     raw_values = FWD_VALUE_COMPILE.findall(string)
-    strip_values_str = " ".join([s.strip() for s in raw_values if len(s.strip()) > 0])
+    strip_values_str = " ".join(
+        [s.strip().replace(",", "") for s in raw_values if s.strip()]
+    )
     strip_values_lst = strip_values_str.split()
     values_lst = []
     for s in strip_values_lst:
         try:
-            str_v = s.replace(",", "")
-            if "-" in str_v:
-                v = -float(str_v.replace("-", ""))
-            else:
-                v = float(str_v)
+            v = -float(s.replace("-", "")) if "-" in s else float(s)
         except ValueError:
             continue
         values_lst.append(v)
@@ -95,7 +93,7 @@ def extract_summary(
             fund_found = True
             fund_name = FWD_FUND_NAME_COMPILE.match(line).group().strip()
 
-            values_lst = _extract_trx_values(line)
+            values_lst = extract_trx_values(line)
             summary_map[fund_name] = values_lst
 
         i += 1
@@ -183,7 +181,7 @@ def extract_fund_trx(
                 while open_found:
                     if FWD_CLOSE_BAL_COMPILE.search(line):
                         break
-                    values = _extract_trx_values(line)
+                    values = extract_trx_values(line)
 
                     date = FWD_DATE_COMPILE.match(line).group()
                     date = datetime.datetime.strptime(date, "%d/%m/%Y").date()

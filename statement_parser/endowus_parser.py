@@ -4,7 +4,7 @@ import re
 import pandas as pd
 import pdfplumber
 
-from .utils.constants import ENDOWUS_COL_NAMES, ENDOWUS_GOALS, ENDOWUS_PHRASES
+from .utils.constants import ENDOWUS_NUM_COL_NAMES
 from .utils.regex_patterns import ENDOWUS_DATE_COMPILE, ENDOWUS_VALUE_COMPILE
 
 
@@ -45,31 +45,35 @@ def extract_date(filename: str) -> datetime.date:
     return dt
 
 
-def extract_data(file: str) -> dict:
+def extract_data(
+    file: str, phrases: list[str], goals: list[str], sources: list[str]
+) -> dict:
     """Parsing endowus monthly statement and extracting goals data
 
     Args:
         file (str): file path with filename
+        phrases (list[str]): list of phrases to identify pages
+        goals (list[str]): list of endowus goals
+        sources (list[str]): list of fund sources, e.g. "SGD Cash", "SRS", "CPF OA"
 
     Returns:
         dict: nested dictionary with endowus goals and source as keys
     """
-    pages = extract_page(ENDOWUS_PHRASES, file)
+    src_compile = re.compile("|".join(sources))
+
+    pages = extract_page(phrases, file)
     str_lst = pages.split("\n")
     final_dict = {}
     for idx, line in enumerate(str_lst):
-        if line in ENDOWUS_GOALS:
+        if line in goals:
             counter = 1
             source = None
             final_dict[line] = {}
             while counter:
                 next_line = str_lst[idx + counter]
-                if "SGD Cash" in next_line:
-                    source = "SGD Cash"
-                elif "SRS" in next_line:
-                    source = "SRS"
-                elif "CPF OA" in next_line:
-                    source = "CPF OA"
+                src = src_compile.search(next_line)
+                if src:
+                    source = src.group()
                 elif "Total" in next_line:
                     break
                 raw_values = ENDOWUS_VALUE_COMPILE.findall(next_line)
@@ -79,7 +83,7 @@ def extract_data(file: str) -> dict:
                         float(v.replace("S$", "").replace(",", "")) for v in raw_values
                     ]
                     final_dict[line][source] = dict(
-                        zip(ENDOWUS_COL_NAMES, cleaned_values)
+                        zip(ENDOWUS_NUM_COL_NAMES, cleaned_values)
                     )
                     counter += 1
                 else:
@@ -119,4 +123,7 @@ def dict2df(nested_dict: dict, date: datetime.date) -> pd.DataFrame:
             "end_balance",
         ]
     ]
-    return df_pivot
+
+    mask = (df_pivot[ENDOWUS_NUM_COL_NAMES]).any(axis=1)
+
+    return df_pivot[mask]
