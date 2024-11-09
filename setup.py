@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="statement_parser",
-    version="0.2.1",
+    version="0.2.2",
     author="timothy",
     author_email="timmy.ong.90@gmail.com",
     description="Library to parse statements from various financial instiutions",

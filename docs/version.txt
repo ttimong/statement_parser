@@ -11,3 +11,7 @@
 0.2.1 - 2024.11.10
 1. Edited fwd_parser extract_page() to parse "<fund name> SGD\nAcc\n123 123 123 SGD123" as there is a change in format in the pdf
 2. Edited endowus_parser extract_date() to read the second occurrence of the date
+
+0.2.2 - 2024-11.10
+1. Edited fwd_parser extract_fund_trx() to use the correct report date
+2. Update FWD_FUND_SEARCH_COMPILE to read "SGDH Acc" due to addition of new account

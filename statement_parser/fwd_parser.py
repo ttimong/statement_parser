@@ -150,7 +150,10 @@ def find_ind_fund_idx(str_lst: list[str], start_idx: int, end_idx: int) -> list[
 
 
 def extract_fund_trx(
-    str_lst: list[str], idx_lst: list[int], account_type: str, date: datetime.date
+    str_lst: list[str],
+    idx_lst: list[int],
+    account_type: str,
+    report_date: datetime.date,
 ) -> pd.DataFrame:
     """
     Extract fund transaction details of IUA or AUA account
@@ -221,7 +224,7 @@ def extract_fund_trx(
 
     fund_df.reset_index(names="fund_name", inplace=True)
     fund_df["account_type"] = account_type
-    fund_df["report_month"] = datetime.datetime.strftime(date, "%Y-%m")
+    fund_df["report_month"] = datetime.datetime.strftime(report_date, "%Y-%m")
 
     return fund_df[
         [
