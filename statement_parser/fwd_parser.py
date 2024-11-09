@@ -1,4 +1,5 @@
 import datetime
+import re
 
 import pandas as pd
 import pdfplumber
@@ -33,7 +34,10 @@ def extract_page(filename: str, password: str) -> list[str]:
             fund_name_w_newline = FWD_ABNORMAL_COMPILE.search(text)
             if fund_name_w_newline:
                 start_idx, end_idx = fund_name_w_newline.span()
+                # step 1 replace "\n" with " " in the fund name
                 corrected_fund_name = text[start_idx:end_idx].replace("\n", " ")
+                # step 2 replace "SGD123" with "123" in the fund name
+                corrected_fund_name = re.sub(r"SGD(?=\d)", "", corrected_fund_name)
                 text = text.replace(text[start_idx:end_idx], corrected_fund_name)
             all_pages.append(text)
 
@@ -315,7 +319,7 @@ def extract_data(file: str, password: str) -> tuple[pd.DataFrame, pd.DataFrame]:
             .agg(
                 units=("units", "sum"),
                 unit_price_fund_currency=("unit_price_fund_currency", "mean"),
-                fund_value_sgd=("value_sgd", "sum"),
+                value_sgd=("value_sgd", "sum"),
             )
             .reset_index()
         )

@@ -9,8 +9,9 @@ FWD_FUND_SEARCH_COMPILE = re.compile(r"(SGD Acc|EUR Acc)")
 FWD_FUND_NAME_COMPILE = re.compile(r"([a-z\s\-]+)", re.IGNORECASE)
 FWD_VALUE_COMPILE = re.compile(r"([0-9\s\,\.\/\-]+)")
 
-FWD_ABNORMAL_COMPILE = re.compile(r"(SGD\nAcc|EUR\nAcc)([0-9\s\,\.\/\-\n]+)(?=\n|$)")
-
+FWD_ABNORMAL_COMPILE = re.compile(
+    r"(SGD\nAcc|EUR\nAcc)((SGD)?[\d\s\,\.\/\-\n]+)+(?=\n|$)"
+)
 FWD_DATE_COMPILE = re.compile(r"\d{2}\/\d{2}\/\d{4}")
 FWD_TRX_TYPE_COMPILE = re.compile(r"[a-z\s]+", re.IGNORECASE)
 

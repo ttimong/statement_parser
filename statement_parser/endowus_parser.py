@@ -39,7 +39,9 @@ def extract_date(filename: str) -> datetime.date:
     Returns:
         datetime.date: month end date in yyyy-mm-dd format
     """
-    dt_str = ENDOWUS_DATE_COMPILE.search(filename).group()
+    # eg of filename "Endowus_Statement_2510238_1 Oct 2024_to_31 Oct 2024.pdf"
+    # we want to get the last date
+    dt_str = ENDOWUS_DATE_COMPILE.findall(filename)[1]
     dt = datetime.datetime.strptime(dt_str, "%d %b %Y").date()
 
     return dt
