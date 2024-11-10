@@ -14,4 +14,5 @@
 
 0.2.2 - 2024-11.10
 1. Edited fwd_parser extract_fund_trx() to use the correct report date
-2. Update FWD_FUND_SEARCH_COMPILE to read "SGDH Acc" due to addition of new account
+2. Update FWD_FUND_SEARCH_COMPILE to read "SGDH Acc" and "USD Acc" due to addition of new account
+3. Edited fwd_parser to output policy_name in summary_df and trx_df

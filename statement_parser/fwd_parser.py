@@ -11,6 +11,7 @@ from statement_parser.utils.regex_patterns import (
     FWD_FUND_NAME_COMPILE,
     FWD_FUND_SEARCH_COMPILE,
     FWD_OPEN_BAL_COMPILE,
+    FWD_POLICY_COMPILE,
     FWD_TRX_TYPE_COMPILE,
     FWD_VALUE_COMPILE,
 )
@@ -270,6 +271,9 @@ def extract_data(file: str, password: str) -> tuple[pd.DataFrame, pd.DataFrame]:
             valuation_date = datetime.datetime.strptime(
                 valuation_date, "%d/%m/%Y"
             ).date()
+        policy_name_found = FWD_POLICY_COMPILE.search(line)
+        if policy_name_found:
+            policy_name = policy_name_found.group()
 
     if iua_idx_lst:
         iua_summ_start_idx = iua_idx_lst[0]
@@ -326,6 +330,7 @@ def extract_data(file: str, password: str) -> tuple[pd.DataFrame, pd.DataFrame]:
             )
             .reset_index()
         )
+        summary_df["policy_name"] = policy_name
 
     # Step 4 - Extract fund transaction data of each account
     trx_df = pd.DataFrame()
@@ -340,5 +345,6 @@ def extract_data(file: str, password: str) -> tuple[pd.DataFrame, pd.DataFrame]:
             str_lst, aua_ind_fund_idx_lst, "AUA", valuation_date
         )
         trx_df = pd.concat([trx_df, aua_trx_df])
+    trx_df["policy_name"] = policy_name
 
     return summary_df, trx_df
