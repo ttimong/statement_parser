@@ -3,7 +3,7 @@ import pandas as pd
 from .utils.constants import TICKERS_TO_IGNORE
 
 
-def extract_from_saxo(filename: str) -> pd.DataFrame:
+def extract_data(filename: str) -> pd.DataFrame:
     """
     Extract USD stock trades from Saxo monthly statement
 
