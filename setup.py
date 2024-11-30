@@ -2,15 +2,13 @@ import setuptools
 
 setuptools.setup(
     name="statement_parser",
-    version="0.2.2",
+    version="0.3.0",
     author="timothy",
     author_email="timmy.ong.90@gmail.com",
     description="Library to parse statements from various financial instiutions",
     url="https://github.com/ttimong/statement_parser.git",
     include_package_data=True,
-    install_requires=[
-        "pdfplumber==0.11.4",
-    ],
+    install_requires=["pdfplumber>=0.11.4", "pandas>=2.2.3"],
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
