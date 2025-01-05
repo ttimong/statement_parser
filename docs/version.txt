@@ -19,3 +19,7 @@
 
 0.3.0 - 2024.11.30
 1. Added ibkr_parser and saxo_parser
+
+0.4.0 - 2025.01.05
+1. Added ABC abstract class
+2. Convert xx_parser.py to class files
