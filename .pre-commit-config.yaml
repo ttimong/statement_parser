@@ -33,16 +33,11 @@ repos:
     hooks:
       - id: pycln
         name: Clean up imports
-  - repo: local
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.5.5
     hooks:
-      - id: linting
-        name: Linting
-        stages: [pre-push]
-        entry: pylint endowus_parser fwd_parser ibkr_parser saxo_parser
-        language: python
-        verbose: true
-        always_run: true
-        pass_filenames: false
+      - id: ruff
+        types: [python]
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.13.0
     hooks:
