@@ -2,7 +2,7 @@ import re
 
 # regex patterns for endowus
 ENDOWUS_DATE_COMPILE = re.compile(r"(\d{1,2} \w{3} \d{4})")
-ENDOWUS_VALUE_COMPILE = re.compile(r"S\$\d{1,3}(?:,\d{3})*\.\d{2}", re.IGNORECASE)
+ENDOWUS_VALUE_COMPILE = re.compile(r"\-?S\$\d{1,3}(?:,\d{3})*\.\d{2}", re.IGNORECASE)
 
 # regex patterns for fwd
 FWD_POLICY_COMPILE = re.compile(r"FWD Invest First \w+")
